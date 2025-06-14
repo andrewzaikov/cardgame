@@ -39,6 +39,7 @@ public class Engine {
             case OPPONENT_MOVE -> GameStatus.OPPONENTS_TURN;
             case PLAYER_WON -> GameStatus.PLAYER_WON;
             case PLAYER_LOST -> GameStatus.PLAYER_LOST;
+            case DRAW -> GameStatus.DRAW;
             default ->  GameStatus.WAIT_OPPONENT_CONNECTION;
         };
     }

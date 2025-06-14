@@ -57,8 +57,12 @@ public class CardGameClientController {
     private Stage stage;
     private Scene scene;
 
-    private static ImageView createImageViewWithCard(Card card) {
-        return new ImageView(new Image(Card.getResourceLocation(card.suit(), card.value())));
+    private static ImageView createImageViewWithCard(Card card, boolean hideCard) {
+        String resource = "/suit.jpg";
+        if (!hideCard) {
+            resource = Card.getResourceLocation(card.suit(), card.value());
+        }
+        return new ImageView(new Image(resource));
     }
 
     public void start(Stage stage, Scene scene) {
@@ -84,13 +88,14 @@ public class CardGameClientController {
                 joinGameItem.setDisable(Engine.getStatus() == GameStatus.WAIT_OPPONENT_CONNECTION);
 
                 for (Card card : Engine.getMyCards()) {
-                    myCards.getChildren().add(createImageViewWithCard(card));
+                    myCards.getChildren().add(createImageViewWithCard(card, false));
                 }
+                boolean hideCard = (gameInfoDto.status() == StatusDto.PLAYER_MOVE || gameInfoDto.status() == StatusDto.OPPONENT_MOVE);
                 for (Card card : Engine.getOpponentCards()) {
-                    opponentCards.getChildren().add(createImageViewWithCard(card));
+                    opponentCards.getChildren().add(createImageViewWithCard(card, hideCard));
                 }
 
-                opponentCardsLabel.setText("Cards of your opponent, score = " + Engine.getScore(Engine.getOpponentCards()));
+                opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " "+Engine.getScore(Engine.getOpponentCards())));
                 myCardsLabel.setText("Your cards, score = " + Engine.getScore(Engine.getMyCards()));
 
                 takeCardButton.setDisable(false);
@@ -104,6 +109,7 @@ public class CardGameClientController {
                     case PLAYER_TURN -> messagesLabel.setText("Make your move!");
                     case PLAYER_WON -> messagesLabel.setText("CONGRATULATIONS!!! You've won!!!");
                     case PLAYER_LOST -> messagesLabel.setText("You've lost. Don't be sad!");
+                    case DRAW -> messagesLabel.setText("Draw! You all are the champions!");
                 }
             }
         }

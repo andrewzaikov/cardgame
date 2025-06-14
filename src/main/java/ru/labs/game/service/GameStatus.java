@@ -21,5 +21,9 @@ public enum GameStatus {
     /**
      * Fix status: opponent has won
      */
-    PLAYER_LOST
+    PLAYER_LOST,
+    /**
+     * Fix status: draw
+     */
+    DRAW
 }
