@@ -9,10 +9,18 @@ import static ru.labs.game.service.GameStatus.PLAYER_TURN;
 public class Client {
     private static String token;
     private static String serverAddress;
-    private static Boolean requestPending;
+    private static Boolean requestPending = false;
 
     public static boolean isConnected() {
         return token != null;
+    }
+
+    public static String getToken() {
+        return token;
+    }
+
+    public static void setToken(String token) {
+        Client.token = token;
     }
 
     public static void connect(String serverAddress) {
@@ -31,6 +39,18 @@ public class Client {
                 Engine.setLastMessage("Connected to server!");
 
                 requestPending = false;
+            }
+        }
+    }
+
+    public static void disconnect() {
+        if(!isConnected()) {
+            return;
+        }
+        synchronized (requestPending) {
+            if (!requestPending) {
+                Client.serverAddress = null;
+                Client.token = null;
             }
         }
     }

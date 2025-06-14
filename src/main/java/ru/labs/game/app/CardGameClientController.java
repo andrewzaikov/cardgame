@@ -9,7 +9,6 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.FlowPane;
 import javafx.stage.Stage;
-import org.javatuples.Pair;
 import ru.labs.game.model.Card;
 import ru.labs.game.model.CardSuit;
 import ru.labs.game.rest.Client;
@@ -17,18 +16,19 @@ import ru.labs.game.service.Engine;
 import ru.labs.game.service.GameStatus;
 
 import java.util.Random;
+import java.util.UUID;
 
 public class CardGameClientController {
     private final Random random = new Random(System.currentTimeMillis());
     private final CardSuit[] suits = {CardSuit.HEARTS, CardSuit.DIAMOND, CardSuit.CLUBS, CardSuit.SPADES};
     @FXML
-    private Label welcomeText;
+    private Label buttonHelpText;
     @FXML
-    private Label enemyCardsLabel;
+    private Label opponentCardsLabel;
     @FXML
     private Label myCardsLabel;
     @FXML
-    private FlowPane enemyCards;
+    private FlowPane opponentCards;
     @FXML
     private FlowPane myCards;
     @FXML
@@ -45,6 +45,9 @@ public class CardGameClientController {
     private Button takeCardButton;
     @FXML
     private Button passMoveButton;
+    @FXML
+    private Label messagesLabel;
+
     private Stage stage;
     private Scene scene;
 
@@ -56,34 +59,61 @@ public class CardGameClientController {
     }
 
     private void updateState() {
-        enemyCards.getChildren().removeAll();
-        myCards.getChildren().removeAll();
+        myCards.getChildren().clear();
+        if (Engine.getMyCards().isEmpty()) {
+            myCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
+        }
+
+        opponentCards.getChildren().clear();
+        if (Engine.getOpponentCards().isEmpty()) {
+            opponentCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
+        }
 
         if (Client.isConnected()) {
             connectToServerItem.setDisable(true);
             stopGameItem.setDisable(false);
-            if (Engine.getStatus() == GameStatus.WAIT_OPPONENT_CONNECTION) {
-                joinGameItem.setDisable(true);
-            } else {
-                joinGameItem.setDisable(false);
+            joinGameItem.setDisable(Engine.getStatus() == GameStatus.WAIT_OPPONENT_CONNECTION);
+
+            for (Card card : Engine.getMyCards()) {
+                myCards.getChildren().add(createImageViewWithCard(card));
+            }
+            for (Card card : Engine.getOpponentCards()) {
+                opponentCards.getChildren().add(createImageViewWithCard(card));
             }
 
-            int myScore = 0;
-            for (var item : Engine.getMyCards()) {
-                myCards.getChildren().add(new ImageView(new Image(Card.getResourceLocation(item.suit(), item.value()))));
-                myScore += item.value();
-            }
+            opponentCardsLabel.setText("Cards of your opponent, score = " + Engine.getScore(Engine.getOpponentCards()));
+            myCardsLabel.setText("Your cards, score = " + Engine.getScore(Engine.getMyCards()));
 
-            int enemyScore = 0;
-            for (var item : Engine.getEnemyCards()) {
-                enemyCards.getChildren().add(new ImageView(new Image(Card.getResourceLocation(item.suit(), item.value()))));
-                enemyScore += item.value();
+            takeCardButton.setDisable(false);
+            takeCardItem.setDisable(false);
+            passMoveButton.setDisable(false);
+            passMoveItem.setDisable(false);
+
+            switch (Engine.getStatus()) {
+                case WAIT_OPPONENT_CONNECTION -> messagesLabel.setText("Waiting, when opponent is connected...");
+                case OPPONENTS_TURN -> messagesLabel.setText("Please wait! Now your opponent is moving.");
+                case PLAYER_TURN -> messagesLabel.setText("Make your move!");
+                case PLAYER_WON -> messagesLabel.setText("CONGRATULATIONS!!! You've won!!!");
+                case PLAYER_LOST -> messagesLabel.setText("You've lost. Don't be sad!");
             }
         } else {
             connectToServerItem.setDisable(false);
             joinGameItem.setDisable(true);
             stopGameItem.setDisable(true);
+            opponentCardsLabel.setText("Cards of your opponent:");
+            myCardsLabel.setText("Your cards:");
+
+            takeCardButton.setDisable(true);
+            takeCardItem.setDisable(true);
+            passMoveButton.setDisable(true);
+            passMoveItem.setDisable(true);
+
+            messagesLabel.setText("Please, connect to server.");
         }
+    }
+
+    private static ImageView createImageViewWithCard(Card card) {
+        return new ImageView(new Image(Card.getResourceLocation(card.suit(), card.value())));
     }
 
     @FXML
@@ -93,10 +123,9 @@ public class CardGameClientController {
         if (value == 5) {
             value++;
         }
-        String location = Card.getResourceLocation(suit, value);
-        if (location != null) {
-            myCards.getChildren().add(new ImageView(new Image(location)));
-        }
+        Engine.getMyCards().add(new Card(value, suit));
+
+        updateState();
     }
 
     @FXML
@@ -106,10 +135,9 @@ public class CardGameClientController {
         if (value == 5) {
             value++;
         }
-        String location = Card.getResourceLocation(suit, value);
-        if (location != null) {
-            enemyCards.getChildren().add(new ImageView(new Image(location)));
-        }
+        Engine.getOpponentCards().add(new Card(value, suit));
+
+        updateState();
     }
 
     @FXML
@@ -120,5 +148,28 @@ public class CardGameClientController {
     @FXML
     protected void onAboutAction() {
         //TODO: show about dialogue
+    }
+
+    @FXML
+    protected void onServerConnect() {
+        //todo: server connection dialogue
+
+        Engine.initGame();
+        Client.setToken(UUID.randomUUID().toString());
+        updateState();
+    }
+
+    @FXML
+    protected void onJoinGame() {
+        //todo: join a game dialogue
+    }
+
+    @FXML
+    protected void onStopGame() {
+        //todo: stop current game
+
+        Engine.initGame();
+        Client.disconnect();
+        updateState();
     }
 }

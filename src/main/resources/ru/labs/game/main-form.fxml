@@ -7,9 +7,10 @@
     <top>
         <MenuBar>
             <Menu mnemonicParsing="false" text="Game">
-                <MenuItem mnemonicParsing="false" text="Connect to server" fx:id="connectToServerItem"/>
-                <MenuItem mnemonicParsing="false" text="Join a game" fx:id="joinGameItem"/>
-                <MenuItem mnemonicParsing="false" text="Stop the game" fx:id="stopGameItem"/>
+                <MenuItem mnemonicParsing="false" text="Connect to server" fx:id="connectToServerItem"
+                          onAction="#onServerConnect"/>
+                <MenuItem mnemonicParsing="false" text="Join a game" fx:id="joinGameItem" onAction="#onJoinGame"/>
+                <MenuItem mnemonicParsing="false" text="Stop the game" fx:id="stopGameItem" onAction="#onStopGame"/>
                 <MenuItem mnemonicParsing="false" text="Exit" onAction="#onExitApplication"/>
             </Menu>
             <Menu mnemonicParsing="false" text="Actions">
@@ -25,9 +26,9 @@
 
     <center>
         <VBox alignment="CENTER">
-            <Label text="Messages for the gamer" style="-fx-font-size: 20; -fx-padding: 30"/>
-            <Label fx:id="enemyCardsLabel" text="Cards of your opponent:" style="-fx-font-size: 12; -fx-padding: 10"/>
-            <FlowPane fx:id="enemyCards" alignment="CENTER"/>
+            <Label fx:id="messagesLabel" text="Messages for the gamer" style="-fx-font-size: 20; -fx-padding: 30"/>
+            <Label fx:id="opponentCardsLabel" text="Cards of your opponent:" style="-fx-font-size: 12; -fx-padding: 10"/>
+            <FlowPane fx:id="opponentCards" alignment="CENTER"/>
             <Label fx:id="myCardsLabel" text="Your cards:" style="-fx-font-size: 12; -fx-padding: 10"/>
             <FlowPane fx:id="myCards" alignment="CENTER"/>
         </VBox>
@@ -35,7 +36,7 @@
 
     <bottom>
         <HBox alignment="CENTER" spacing="5" style="-fx-padding: 10">
-            <Label fx:id="welcomeText" text="Press the button"/>
+            <Label fx:id="buttonHelpText" text="Press the button"/>
             <Button onAction="#onTakeCardClick" text="Take a card" fx:id="takeCardButton"/>
             <Button onAction="#onPassMoveClick" text="Pass the move" fx:id="passMoveButton"/>
         </HBox>

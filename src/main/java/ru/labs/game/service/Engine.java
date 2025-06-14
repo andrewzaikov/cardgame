@@ -9,7 +9,14 @@ public class Engine {
     private static GameStatus status = GameStatus.WAIT_OPPONENT_CONNECTION;
     private static String lastMessage = null;
     private static List<Card> myCards = new ArrayList<>();
-    private static List<Card> enemyCards = new ArrayList<>();
+    private static List<Card> opponentCards = new ArrayList<>();
+
+    public static void initGame() {
+        status = GameStatus.WAIT_OPPONENT_CONNECTION;
+        myCards.clear();
+        opponentCards.clear();
+        lastMessage = null;
+    }
 
     public static GameStatus getStatus() {
         return status;
@@ -35,19 +42,15 @@ public class Engine {
         Engine.myCards = myCards;
     }
 
-    public static List<Card> getEnemyCards() {
-        return enemyCards;
+    public static List<Card> getOpponentCards() {
+        return opponentCards;
     }
 
-    public static void setEnemyCards(List<Card> enemyCards) {
-        Engine.enemyCards = enemyCards;
+    public static void setOpponentCards(List<Card> opponentCards) {
+        Engine.opponentCards = opponentCards;
     }
 
     public static int getScore(List<Card> cards) {
-        int score = 0;
-        for (var item : myCards) {
-            score += item.value();
-        }
-        return score;
+        return cards.stream().mapToInt(Card::value).sum();
     }
 }
