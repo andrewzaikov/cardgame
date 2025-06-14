@@ -1,10 +1,15 @@
 package ru.labs.game.service;
 
 import ru.labs.game.model.Card;
+import ru.labs.game.model.CardSuit;
+import ru.labs.game.rest.GameInfoDto;
 
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Singleton (statis). Most of game-engine functions: cards, status etc.
+ */
 public class Engine {
     private static GameStatus status = GameStatus.WAIT_OPPONENT_CONNECTION;
     private static String lastMessage = null;
@@ -16,6 +21,26 @@ public class Engine {
         myCards.clear();
         opponentCards.clear();
         lastMessage = null;
+    }
+
+    public static void updateState(GameInfoDto gameInfoDto) {
+        myCards.clear();
+        for (var item : gameInfoDto.myCards()) {
+            myCards.add(new Card(item.value(), CardSuit.convert(item.suit())));
+        }
+
+        opponentCards.clear();
+        for (var item : gameInfoDto.opponentCards()) {
+            opponentCards.add(new Card(item.value(), CardSuit.convert(item.suit())));
+        }
+
+        status = switch (gameInfoDto.status()) {
+            case PLAYER_MOVE -> GameStatus.PLAYER_TURN;
+            case OPPONENT_MOVE -> GameStatus.OPPONENTS_TURN;
+            case PLAYER_WON -> GameStatus.PLAYER_WON;
+            case PLAYER_LOST -> GameStatus.PLAYER_LOST;
+            default ->  GameStatus.WAIT_OPPONENT_CONNECTION;
+        };
     }
 
     public static GameStatus getStatus() {

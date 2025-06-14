@@ -3,6 +3,7 @@ package ru.labs.game.app;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
+import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -17,6 +18,7 @@ public class CardGameClientApp extends Application {
         controller.start(stage, scene);
 
         stage.setTitle("21 point (card game)");
+        stage.getIcons().add(new Image("/poker_icon.png"));
         stage.setScene(scene);
         stage.show();
     }
