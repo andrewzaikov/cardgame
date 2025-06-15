@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -59,22 +60,42 @@ public class Client {
     }
 
     public List<GameListItemDto> getGameList() {
-        //todo: stub - remove it
-        return List.of(new GameListItemDto("First game", UUID.randomUUID().toString()),
-                new GameListItemDto("Second game", UUID.randomUUID().toString()),
-                new GameListItemDto("Third game", UUID.randomUUID().toString()));
+        List<GameListItemDto> gameList = Collections.emptyList();
+        synchronized (Client.class) {
+            if(!requestPending) {
+                requestPending = true;
+                gameList = restTemplate.getForObject(serverAddress+"/gameList?session="+token, List.class);
+                System.out.println("gameList:");
+                System.out.println(gameList);
+                requestPending = false;
+            }
+        }
+        return gameList;
     }
 
     public void joinGame(String gameId) {
-        this.gameId = gameId;
+        synchronized (Client.class) {
+            if(!requestPending) {
+                requestPending = true;
+                this.gameId = gameId;
+                restTemplate.postForObject(serverAddress+"/join?session="+token+"&id="+gameId, null, Object.class);
+                requestPending = false;
+            }
+        }
     }
 
     public GameInfoDto getInfo() {
-        //todo: stub - remove it
-        return new GameInfoDto(
-                List.of(new CardDto(6, SuitDto.SPADE), new CardDto(4, SuitDto.CLUB)),
-                List.of(new CardDto(11, SuitDto.DIAMOND)),
-                StatusDto.PLAYER_MOVE);
+        GameInfoDto gameInfoDto = null;
+        synchronized (Client.class) {
+            if (!requestPending) {
+                requestPending = true;
+                gameInfoDto = restTemplate.getForObject(serverAddress+"/getInfo?session="+token, GameInfoDto.class);
+                System.out.println("gameInfo:");
+                System.out.println(gameInfoDto);
+                requestPending = false;
+            }
+        }
+        return gameInfoDto;
     }
 
     public void takeCard() {
@@ -106,12 +127,21 @@ public class Client {
             if (!requestPending) {
                 requestPending = true;
 
-                this.serverAddress = serverAddress;
+                if (serverAddress.endsWith("/")) {
+                    this.serverAddress = serverAddress.substring(0, serverAddress.length()-1);
+                } else {
+                    this.serverAddress = serverAddress;
+                }
+                System.out.println("serverAddress="+this.serverAddress);
                 this.firstName = firstName;
                 this.lastName = lastName;
 
-                //todo: get it from server
-                this.token = UUID.randomUUID().toString();
+                token = restTemplate.postForObject(
+                        serverAddress+"/register?firstName="+firstName+"&lastName="+lastName,
+                        token,
+                        String.class
+                        );
+                System.out.println("session="+token);
                 requestPending = false;
             }
         }
