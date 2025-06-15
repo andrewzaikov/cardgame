@@ -13,8 +13,12 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
+import org.springframework.beans.factory.annotation.Autowire;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Configurable;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
 import ru.labs.game.model.Card;
-import ru.labs.game.model.CardSuit;
 import ru.labs.game.rest.Client;
 import ru.labs.game.rest.GameInfoDto;
 import ru.labs.game.rest.GameListItemDto;
@@ -22,7 +26,11 @@ import ru.labs.game.rest.StatusDto;
 import ru.labs.game.service.Game;
 import ru.labs.game.service.GameStatus;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 
 public class CardGameClientController {
     //private final Random random = new Random(System.currentTimeMillis());
@@ -54,8 +62,9 @@ public class CardGameClientController {
     @FXML
     private Label messagesLabel;
 
-    //private Stage stage;
-    //private Scene scene;
+    private Game gameEngine;
+
+    private Client restClient;
 
     private static ImageView createImageViewWithCard(Card card, boolean hideCard) {
         String resource = "/suit.jpg";
@@ -63,6 +72,17 @@ public class CardGameClientController {
             resource = Card.getResourceLocation(card.suit(), card.value());
         }
         return new ImageView(new Image(resource));
+    }
+
+    public void setGameEngine(Game gameEngine) {
+        this.gameEngine = gameEngine;
+    }
+
+    //private Stage stage;
+    //private Scene scene;
+
+    public void setRestClient(Client restClient) {
+        this.restClient = restClient;
     }
 
     public void start(Stage stage, Scene scene) {
@@ -76,35 +96,35 @@ public class CardGameClientController {
         myCards.getChildren().clear();
         opponentCards.getChildren().clear();
 
-        if (Client.isConnected()) {
-            GameInfoDto gameInfoDto = Client.getInfo();
-            Game.updateState(gameInfoDto);
+        if (restClient.isConnected()) {
+            GameInfoDto gameInfoDto = restClient.getInfo();
+            gameEngine.updateState(gameInfoDto);
 
             if (gameInfoDto.status() == StatusDto.SESSION_CLOSED) {
-                Client.disconnect();
+                restClient.disconnect();
 
             } else {
                 connectToServerItem.setDisable(true);
                 stopGameItem.setDisable(false);
-                joinGameItem.setDisable(Game.getStatus() != GameStatus.CONNECTED);
+                joinGameItem.setDisable(gameEngine.getStatus() != GameStatus.CONNECTED);
 
-                for (Card card : Game.getMyCards()) {
+                for (Card card : gameEngine.getMyCards()) {
                     myCards.getChildren().add(createImageViewWithCard(card, false));
                 }
                 boolean hideCard = (gameInfoDto.status() == StatusDto.PLAYER_MOVE || gameInfoDto.status() == StatusDto.OPPONENT_MOVE);
-                for (Card card : Game.getOpponentCards()) {
+                for (Card card : gameEngine.getOpponentCards()) {
                     opponentCards.getChildren().add(createImageViewWithCard(card, hideCard));
                 }
 
-                opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " "+ Game.getScore(Game.getOpponentCards())));
-                myCardsLabel.setText("Your cards, score = " + Game.getScore(Game.getMyCards()));
+                opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " " + gameEngine.getScore(gameEngine.getOpponentCards())));
+                myCardsLabel.setText("Your cards, score = " + gameEngine.getScore(gameEngine.getMyCards()));
 
                 takeCardButton.setDisable(false);
                 takeCardItem.setDisable(false);
                 passMoveButton.setDisable(false);
                 passMoveItem.setDisable(false);
 
-                switch (Game.getStatus()) {
+                switch (gameEngine.getStatus()) {
                     case CONNECTED -> messagesLabel.setText("Now join an existing game.");
                     case WAIT_OPPONENT_CONNECTION -> messagesLabel.setText("Waiting, when opponent is connected...");
                     case OPPONENTS_TURN -> messagesLabel.setText("Please wait! Now your opponent is moving.");
@@ -116,7 +136,7 @@ public class CardGameClientController {
             }
         }
 
-        if (!Client.isConnected()) {
+        if (!restClient.isConnected()) {
             connectToServerItem.setDisable(false);
             joinGameItem.setDisable(true);
             stopGameItem.setDisable(true);
@@ -131,10 +151,10 @@ public class CardGameClientController {
             messagesLabel.setText("Please, connect to game server.");
         }
 
-        if (Game.getOpponentCards().isEmpty()) {
+        if (gameEngine.getOpponentCards().isEmpty()) {
             opponentCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
         }
-        if (Game.getMyCards().isEmpty()) {
+        if (gameEngine.getMyCards().isEmpty()) {
             myCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
         }
     }
@@ -147,7 +167,7 @@ public class CardGameClientController {
             value++;
         }
         Engine.getMyCards().add(new Card(value, suit));*/
-        Client.takeCard();
+        restClient.takeCard();
         updateState();
     }
 
@@ -159,13 +179,13 @@ public class CardGameClientController {
             value++;
         }
         Engine.getOpponentCards().add(new Card(value, suit));*/
-        Client.passMove();
+        restClient.passMove();
         updateState();
     }
 
     @FXML
     protected void onExitApplication() {
-        Client.disconnect();
+        restClient.disconnect();
         System.exit(0);
     }
 
@@ -184,10 +204,10 @@ public class CardGameClientController {
         ButtonType cancelButtonType = new ButtonType("Cancel", ButtonBar.ButtonData.CANCEL_CLOSE);
 
         Label label = new Label("Server address: ");
-        TextField serverAddress = new TextField(Client.getServerAddress());
+        TextField serverAddress = new TextField(restClient.getServerAddress());
         CheckBox masterCheck = new CheckBox("Start game and wait for connection");
-        TextField firstNameText = new TextField(Client.getFirstName());
-        TextField lastNameText = new TextField(Client.getLastName());
+        TextField firstNameText = new TextField(restClient.getFirstName());
+        TextField lastNameText = new TextField(restClient.getLastName());
         HBox hBox2 = new HBox(new Label("First name: "), firstNameText, new Label("    Last name: "), lastNameText);
         hBox2.setAlignment(Pos.CENTER_LEFT);
         HBox hBox1 = new HBox(label, serverAddress);
@@ -207,8 +227,11 @@ public class CardGameClientController {
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
-            Client.connect(serverAddress.getText(), firstNameText.getText(), lastNameText.getText());
-            Game.initGame();
+            restClient.connect(serverAddress.getText(), firstNameText.getText(), lastNameText.getText());
+            gameEngine.initGame();
+            if (masterCheck.isSelected()) {
+                restClient.startGame();
+            }
             updateState();
         }
     }
@@ -226,7 +249,7 @@ public class CardGameClientController {
 
     @FXML
     protected void onJoinGame() {
-        List<GameListItemDto> gameList = Client.getGameList();
+        List<GameListItemDto> gameList = restClient.getGameList();
         Map<String, String> gameMap = new HashMap<>(gameList.size());
         for (var item : gameList) {
             gameMap.put(item.gameCaption(), item.gameId());
@@ -235,7 +258,7 @@ public class CardGameClientController {
         ButtonType okButtonType = new ButtonType("Connect", ButtonBar.ButtonData.OK_DONE);
 
         ObservableList<String> games = FXCollections.observableList(gameList.stream().map(GameListItemDto::gameCaption).toList());
-        ListView<String> gameListView = new ListView<String>(games);
+        ListView<String> gameListView = new ListView<>(games);
         gameListView.setPrefSize(250, 150);
 
         final String[] selectedGame = new String[1];
@@ -259,7 +282,7 @@ public class CardGameClientController {
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             if (selectedGame[0] != null && gameMap.get(selectedGame[0]) != null) {
-                Client.joinGame(gameMap.get(selectedGame[0]));
+                restClient.joinGame(gameMap.get(selectedGame[0]));
                 updateState();
             }
         }
@@ -267,8 +290,8 @@ public class CardGameClientController {
 
     @FXML
     protected void onStopGame() {
-        Client.stopGame();
-        Game.initGame();
+        restClient.stopGame();
+        gameEngine.initGame();
         updateState();
     }
 }

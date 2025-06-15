@@ -1,5 +1,7 @@
 package ru.labs.game.service;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 import ru.labs.game.model.Card;
 import ru.labs.game.model.CardSuit;
 import ru.labs.game.rest.Client;
@@ -12,20 +14,28 @@ import java.util.List;
  * Singleton (static).
  * Most of game-engine functions: cards, status etc.
  */
+@Service
 public class Game {
-    private static GameStatus status;
-    private static String lastMessage;
-    private static final List<Card> myCards = new ArrayList<>();
-    private static final List<Card> opponentCards = new ArrayList<>();
+    private GameStatus status;
+    private String lastMessage;
+    private final List<Card> myCards = new ArrayList<>();
+    private final List<Card> opponentCards = new ArrayList<>();
 
-    public static void initGame() {
-        status = Client.isConnected() ? GameStatus.CONNECTED : null;
+    private final Client restClient;
+
+    @Autowired
+    public Game(Client restClient) {
+        this.restClient = restClient;
+    }
+
+    public void initGame() {
+        status = restClient.isConnected() ? GameStatus.CONNECTED : null;
         myCards.clear();
         opponentCards.clear();
         lastMessage = null;
     }
 
-    public static void updateState(GameInfoDto gameInfoDto) {
+    public void updateState(GameInfoDto gameInfoDto) {
         myCards.clear();
         for (var item : gameInfoDto.myCards()) {
             myCards.add(new Card(item.value(), CardSuit.convert(item.suit())));
@@ -48,31 +58,31 @@ public class Game {
         };
     }
 
-    public static GameStatus getStatus() {
+    public GameStatus getStatus() {
         return status;
     }
 
-    public static void setStatus(GameStatus status) {
-        Game.status = status;
+    public void setStatus(GameStatus status) {
+        this.status = status;
     }
 
-    public static String getLastMessage() {
+    public String getLastMessage() {
         return lastMessage;
     }
 
-    public static void setLastMessage(String lastMessage) {
-        Game.lastMessage = lastMessage;
+    public void setLastMessage(String lastMessage) {
+        this.lastMessage = lastMessage;
     }
 
-    public static List<Card> getMyCards() {
+    public List<Card> getMyCards() {
         return myCards;
     }
 
-    public static List<Card> getOpponentCards() {
+    public List<Card> getOpponentCards() {
         return opponentCards;
     }
 
-    public static int getScore(List<Card> cards) {
+    public int getScore(List<Card> cards) {
         return cards.stream().mapToInt(Card::value).sum();
     }
 }

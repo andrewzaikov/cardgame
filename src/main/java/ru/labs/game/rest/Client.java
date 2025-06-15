@@ -1,63 +1,75 @@
 package ru.labs.game.rest;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+
 import java.util.List;
 import java.util.UUID;
 
 /**
  * Singleton (static). Connection to server, join a game, obtain a status etc.
  */
+@Service
 public class Client {
-    private static String token;
-    private static String serverAddress = "http://localhost:8080/";
-    private static Boolean requestPending = false;
-    private static String firstName;
-    private static String lastName;
-    private static String gameId;
+    private String token;
+    private String serverAddress = "http://localhost:8080/";
+    private Boolean requestPending = false;
+    private String firstName;
+    private String lastName;
+    private String gameId;
 
-    public static boolean isConnected() {
+    private final RestTemplate restTemplate;
+
+    @Autowired
+    public Client(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
+    }
+
+    public boolean isConnected() {
         return token != null;
     }
 
-    public static String getServerAddress() {
+    public String getServerAddress() {
         return serverAddress;
     }
 
-    public static void setServerAddress(String serverAddress) {
-        Client.serverAddress = serverAddress;
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
     }
 
-    public static String getFirstName() {
+    public String getFirstName() {
         return firstName;
     }
 
-    public static void setFirstName(String firstName) {
-        Client.firstName = firstName;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
-    public static String getLastName() {
+    public String getLastName() {
         return lastName;
     }
 
-    public static void setLastName(String lastName) {
-        Client.lastName = lastName;
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
     }
 
-    private static boolean isBlank(String s) {
+    private boolean isBlank(String s) {
         return s == null || s.isBlank();
     }
 
-    public static List<GameListItemDto> getGameList() {
+    public List<GameListItemDto> getGameList() {
         //todo: stub - remove it
         return List.of(new GameListItemDto("First game", UUID.randomUUID().toString()),
                 new GameListItemDto("Second game", UUID.randomUUID().toString()),
                 new GameListItemDto("Third game", UUID.randomUUID().toString()));
     }
 
-    public static void joinGame(String gameId) {
-        Client.gameId = gameId;
+    public void joinGame(String gameId) {
+        this.gameId = gameId;
     }
 
-    public static GameInfoDto getInfo() {
+    public GameInfoDto getInfo() {
         //todo: stub - remove it
         return new GameInfoDto(
                 List.of(new CardDto(6, SuitDto.SPADE), new CardDto(4, SuitDto.CLUB)),
@@ -65,23 +77,23 @@ public class Client {
                 StatusDto.PLAYER_MOVE);
     }
 
-    public static void takeCard() {
+    public void takeCard() {
 
     }
 
-    public static void passMove() {
+    public void passMove() {
 
     }
 
-    public static void stopGame() {
+    public void stopGame() {
 
     }
 
-    public static void startGame() {
+    public void startGame() {
 
     }
 
-    public static void connect(String serverAddress, String firstName, String lastName) {
+    public void connect(String serverAddress, String firstName, String lastName) {
         //TODO: register client connection, obtain a token
         if (isBlank(serverAddress)) {
             throw new RuntimeException("Server address is not set!");
@@ -94,24 +106,24 @@ public class Client {
             if (!requestPending) {
                 requestPending = true;
 
-                Client.serverAddress = serverAddress;
-                Client.firstName = firstName;
-                Client.lastName = lastName;
+                this.serverAddress = serverAddress;
+                this.firstName = firstName;
+                this.lastName = lastName;
 
                 //todo: get it from server
-                Client.token = UUID.randomUUID().toString();
+                this.token = UUID.randomUUID().toString();
                 requestPending = false;
             }
         }
     }
 
-    public static void disconnect() {
+    public void disconnect() {
         if(!isConnected()) {
             return;
         }
         synchronized (Client.class) {
             if (!requestPending) {
-                Client.token = null;
+                this.token = null;
             }
         }
     }
