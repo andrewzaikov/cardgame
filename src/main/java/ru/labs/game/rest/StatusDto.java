@@ -6,6 +6,7 @@ public enum StatusDto {
     PLAYER_WON,
     PLAYER_LOST,
     DRAW,
-    WAIT_CONNECTION,
+    WAIT_OPPONENT_CONNECTION,
+    CONNECTED,
     SESSION_CLOSED
 }

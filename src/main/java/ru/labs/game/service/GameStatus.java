@@ -2,6 +2,11 @@ package ru.labs.game.service;
 
 public enum GameStatus {
     /**
+     * Connected to server.
+     * No game is chosen.
+     */
+    CONNECTED,
+    /**
      * Connected to Server.
      * Second player not connected
      */

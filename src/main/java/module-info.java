@@ -13,4 +13,5 @@ module ru.labs.game {
     exports ru.labs.game.app;
     opens ru.labs.game.app to javafx.fxml;
     opens ru.labs.game.model to javafx.fxml;
+    exports ru.labs.game;
 }

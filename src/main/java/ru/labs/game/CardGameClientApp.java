@@ -1,10 +1,11 @@
-package ru.labs.game.app;
+package ru.labs.game;
 
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
+import ru.labs.game.app.CardGameClientController;
 
 import java.io.IOException;
 

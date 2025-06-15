@@ -2,22 +2,24 @@ package ru.labs.game.service;
 
 import ru.labs.game.model.Card;
 import ru.labs.game.model.CardSuit;
+import ru.labs.game.rest.Client;
 import ru.labs.game.rest.GameInfoDto;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Singleton (statis). Most of game-engine functions: cards, status etc.
+ * Singleton (static).
+ * Most of game-engine functions: cards, status etc.
  */
-public class Engine {
-    private static GameStatus status = GameStatus.WAIT_OPPONENT_CONNECTION;
-    private static String lastMessage = null;
-    private static List<Card> myCards = new ArrayList<>();
-    private static List<Card> opponentCards = new ArrayList<>();
+public class Game {
+    private static GameStatus status;
+    private static String lastMessage;
+    private static final List<Card> myCards = new ArrayList<>();
+    private static final List<Card> opponentCards = new ArrayList<>();
 
     public static void initGame() {
-        status = GameStatus.WAIT_OPPONENT_CONNECTION;
+        status = Client.isConnected() ? GameStatus.CONNECTED : null;
         myCards.clear();
         opponentCards.clear();
         lastMessage = null;
@@ -40,7 +42,9 @@ public class Engine {
             case PLAYER_WON -> GameStatus.PLAYER_WON;
             case PLAYER_LOST -> GameStatus.PLAYER_LOST;
             case DRAW -> GameStatus.DRAW;
-            default ->  GameStatus.WAIT_OPPONENT_CONNECTION;
+            case CONNECTED -> GameStatus.CONNECTED;
+            case WAIT_OPPONENT_CONNECTION -> GameStatus.WAIT_OPPONENT_CONNECTION;
+            case SESSION_CLOSED -> null;
         };
     }
 
@@ -49,7 +53,7 @@ public class Engine {
     }
 
     public static void setStatus(GameStatus status) {
-        Engine.status = status;
+        Game.status = status;
     }
 
     public static String getLastMessage() {
@@ -57,23 +61,15 @@ public class Engine {
     }
 
     public static void setLastMessage(String lastMessage) {
-        Engine.lastMessage = lastMessage;
+        Game.lastMessage = lastMessage;
     }
 
     public static List<Card> getMyCards() {
         return myCards;
     }
 
-    public static void setMyCards(List<Card> myCards) {
-        Engine.myCards = myCards;
-    }
-
     public static List<Card> getOpponentCards() {
         return opponentCards;
-    }
-
-    public static void setOpponentCards(List<Card> opponentCards) {
-        Engine.opponentCards = opponentCards;
     }
 
     public static int getScore(List<Card> cards) {

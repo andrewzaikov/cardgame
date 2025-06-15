@@ -1,18 +1,14 @@
 package ru.labs.game.rest;
 
-import ru.labs.game.service.Engine;
-
 import java.util.List;
 import java.util.UUID;
-
-import static ru.labs.game.service.GameStatus.PLAYER_TURN;
 
 /**
  * Singleton (static). Connection to server, join a game, obtain a status etc.
  */
 public class Client {
     private static String token;
-    private static String serverAddress = "http://127.0.0.1/";
+    private static String serverAddress = "http://localhost:8080/";
     private static Boolean requestPending = false;
     private static String firstName;
     private static String lastName;
@@ -51,6 +47,7 @@ public class Client {
     }
 
     public static List<GameListItemDto> getGameList() {
+        //todo: stub - remove it
         return List.of(new GameListItemDto("First game", UUID.randomUUID().toString()),
                 new GameListItemDto("Second game", UUID.randomUUID().toString()),
                 new GameListItemDto("Third game", UUID.randomUUID().toString()));
@@ -61,6 +58,7 @@ public class Client {
     }
 
     public static GameInfoDto getInfo() {
+        //todo: stub - remove it
         return new GameInfoDto(
                 List.of(new CardDto(6, SuitDto.SPADE), new CardDto(4, SuitDto.CLUB)),
                 List.of(new CardDto(11, SuitDto.DIAMOND)),
@@ -79,8 +77,8 @@ public class Client {
 
     }
 
-    public static StatusDto startGame() {
-        return StatusDto.WAIT_CONNECTION;
+    public static void startGame() {
+
     }
 
     public static void connect(String serverAddress, String firstName, String lastName) {
@@ -100,12 +98,8 @@ public class Client {
                 Client.firstName = firstName;
                 Client.lastName = lastName;
 
-                // get from server
+                //todo: get it from server
                 Client.token = UUID.randomUUID().toString();
-
-                Engine.setStatus(PLAYER_TURN);
-                Engine.setLastMessage("Connected to server!");
-
                 requestPending = false;
             }
         }

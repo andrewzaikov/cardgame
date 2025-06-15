@@ -19,14 +19,14 @@ import ru.labs.game.rest.Client;
 import ru.labs.game.rest.GameInfoDto;
 import ru.labs.game.rest.GameListItemDto;
 import ru.labs.game.rest.StatusDto;
-import ru.labs.game.service.Engine;
+import ru.labs.game.service.Game;
 import ru.labs.game.service.GameStatus;
 
 import java.util.*;
 
 public class CardGameClientController {
-    private final Random random = new Random(System.currentTimeMillis());
-    private final CardSuit[] suits = {CardSuit.HEARTS, CardSuit.DIAMOND, CardSuit.CLUBS, CardSuit.SPADES};
+    //private final Random random = new Random(System.currentTimeMillis());
+    //private final CardSuit[] suits = {CardSuit.HEARTS, CardSuit.DIAMOND, CardSuit.CLUBS, CardSuit.SPADES};
     @FXML
     private Label buttonHelpText;
     @FXML
@@ -54,8 +54,8 @@ public class CardGameClientController {
     @FXML
     private Label messagesLabel;
 
-    private Stage stage;
-    private Scene scene;
+    //private Stage stage;
+    //private Scene scene;
 
     private static ImageView createImageViewWithCard(Card card, boolean hideCard) {
         String resource = "/suit.jpg";
@@ -66,8 +66,8 @@ public class CardGameClientController {
     }
 
     public void start(Stage stage, Scene scene) {
-        this.stage = stage;
-        this.scene = scene;
+        //this.stage = stage;
+        //this.scene = scene;
 
         updateState();
     }
@@ -78,37 +78,39 @@ public class CardGameClientController {
 
         if (Client.isConnected()) {
             GameInfoDto gameInfoDto = Client.getInfo();
-            Engine.updateState(gameInfoDto);
+            Game.updateState(gameInfoDto);
 
             if (gameInfoDto.status() == StatusDto.SESSION_CLOSED) {
                 Client.disconnect();
+
             } else {
                 connectToServerItem.setDisable(true);
                 stopGameItem.setDisable(false);
-                joinGameItem.setDisable(Engine.getStatus() == GameStatus.WAIT_OPPONENT_CONNECTION);
+                joinGameItem.setDisable(Game.getStatus() != GameStatus.CONNECTED);
 
-                for (Card card : Engine.getMyCards()) {
+                for (Card card : Game.getMyCards()) {
                     myCards.getChildren().add(createImageViewWithCard(card, false));
                 }
                 boolean hideCard = (gameInfoDto.status() == StatusDto.PLAYER_MOVE || gameInfoDto.status() == StatusDto.OPPONENT_MOVE);
-                for (Card card : Engine.getOpponentCards()) {
+                for (Card card : Game.getOpponentCards()) {
                     opponentCards.getChildren().add(createImageViewWithCard(card, hideCard));
                 }
 
-                opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " "+Engine.getScore(Engine.getOpponentCards())));
-                myCardsLabel.setText("Your cards, score = " + Engine.getScore(Engine.getMyCards()));
+                opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " "+ Game.getScore(Game.getOpponentCards())));
+                myCardsLabel.setText("Your cards, score = " + Game.getScore(Game.getMyCards()));
 
                 takeCardButton.setDisable(false);
                 takeCardItem.setDisable(false);
                 passMoveButton.setDisable(false);
                 passMoveItem.setDisable(false);
 
-                switch (Engine.getStatus()) {
+                switch (Game.getStatus()) {
+                    case CONNECTED -> messagesLabel.setText("Now join an existing game.");
                     case WAIT_OPPONENT_CONNECTION -> messagesLabel.setText("Waiting, when opponent is connected...");
                     case OPPONENTS_TURN -> messagesLabel.setText("Please wait! Now your opponent is moving.");
                     case PLAYER_TURN -> messagesLabel.setText("Make your move!");
                     case PLAYER_WON -> messagesLabel.setText("CONGRATULATIONS!!! You've won!!!");
-                    case PLAYER_LOST -> messagesLabel.setText("You've lost. Don't be sad!");
+                    case PLAYER_LOST -> messagesLabel.setText("You've lost. Don't be sad.");
                     case DRAW -> messagesLabel.setText("Draw! You all are the champions!");
                 }
             }
@@ -126,13 +128,13 @@ public class CardGameClientController {
             passMoveButton.setDisable(true);
             passMoveItem.setDisable(true);
 
-            messagesLabel.setText("Please, connect to server.");
+            messagesLabel.setText("Please, connect to game server.");
         }
 
-        if (Engine.getOpponentCards().isEmpty()) {
+        if (Game.getOpponentCards().isEmpty()) {
             opponentCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
         }
-        if (Engine.getMyCards().isEmpty()) {
+        if (Game.getMyCards().isEmpty()) {
             myCards.getChildren().add(new ImageView(new Image("/suit.jpg")));
         }
     }
@@ -163,6 +165,7 @@ public class CardGameClientController {
 
     @FXML
     protected void onExitApplication() {
+        Client.disconnect();
         System.exit(0);
     }
 
@@ -185,11 +188,11 @@ public class CardGameClientController {
         CheckBox masterCheck = new CheckBox("Start game and wait for connection");
         TextField firstNameText = new TextField(Client.getFirstName());
         TextField lastNameText = new TextField(Client.getLastName());
-        HBox hbox2 = new HBox(new Label("First name: "), firstNameText, new Label("    Last name: "), lastNameText);
-        hbox2.setAlignment(Pos.CENTER_LEFT);
+        HBox hBox2 = new HBox(new Label("First name: "), firstNameText, new Label("    Last name: "), lastNameText);
+        hBox2.setAlignment(Pos.CENTER_LEFT);
         HBox hBox1 = new HBox(label, serverAddress);
         hBox1.setAlignment(Pos.CENTER_LEFT);
-        VBox vbox = new VBox(hBox1, new Label(" "), hbox2, masterCheck);
+        VBox vbox = new VBox(hBox1, new Label(" "), hBox2, masterCheck);
 
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.getDialogPane().setContent(vbox);
@@ -204,8 +207,8 @@ public class CardGameClientController {
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
-            Engine.initGame();
             Client.connect(serverAddress.getText(), firstNameText.getText(), lastNameText.getText());
+            Game.initGame();
             updateState();
         }
     }
@@ -257,7 +260,6 @@ public class CardGameClientController {
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             if (selectedGame[0] != null && gameMap.get(selectedGame[0]) != null) {
                 Client.joinGame(gameMap.get(selectedGame[0]));
-
                 updateState();
             }
         }
@@ -265,8 +267,8 @@ public class CardGameClientController {
 
     @FXML
     protected void onStopGame() {
-        Engine.initGame();
-        Client.disconnect();
+        Client.stopGame();
+        Game.initGame();
         updateState();
     }
 }
