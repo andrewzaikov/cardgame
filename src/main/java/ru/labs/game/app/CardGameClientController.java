@@ -83,6 +83,9 @@ public class CardGameClientController {
 
         if (restClient.isConnected()) {
             GameInfoDto gameInfoDto = restClient.getInfo();
+            if (gameInfoDto.exceptionMessage() != null) {
+                showExceptionDialog(gameInfoDto.exceptionMessage());
+            }
             gameEngine.updateState(gameInfoDto);
 
             if (gameInfoDto.status() == StatusDto.SESSION_CLOSED) {
@@ -147,13 +150,15 @@ public class CardGameClientController {
 
     @FXML
     protected void onTakeCardClick() {
-        restClient.takeCard();
+        String exceptionMessage = restClient.takeCard();
+        showExceptionDialog(exceptionMessage);
         updateState();
     }
 
     @FXML
     protected void onPassMoveClick() {
-        restClient.passMove();
+        String exceptionMessage = restClient.passMove();
+        showExceptionDialog(exceptionMessage);
         updateState();
     }
 
@@ -206,13 +211,29 @@ public class CardGameClientController {
 
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
-            restClient.connect(serverAddress.getText(), firstNameText.getText(), lastNameText.getText());
+            String exceptionMessage = restClient.connect(serverAddress.getText(), firstNameText.getText(), lastNameText.getText());
             gameEngine.initGame();
             if (masterCheck.isSelected()) {
-                restClient.startGame();
+                exceptionMessage = restClient.startGame();
             }
+            showExceptionDialog(exceptionMessage);
             updateState();
         }
+    }
+
+    private void showExceptionDialog(String exceptionMessage) {
+        if (exceptionMessage == null) {
+            return;
+        }
+        ButtonType okButtonType = new ButtonType("Connect", ButtonBar.ButtonData.OK_DONE);
+
+        VBox vbox = new VBox(new Label("ERROR:"), new Label(exceptionMessage));
+
+        Dialog<ButtonType> dialog = new Dialog<>();
+        dialog.getDialogPane().setContent(vbox);
+        dialog.getDialogPane().getButtonTypes().addAll(okButtonType);
+
+        Optional<ButtonType> result = dialog.showAndWait();
     }
 
     private boolean validateConnection(String serverAddressText, String firstNameText, String lastNameText) {
@@ -261,7 +282,8 @@ public class CardGameClientController {
         Optional<ButtonType> result = dialog.showAndWait();
         if (result.isPresent() && result.get().getButtonData() == ButtonBar.ButtonData.OK_DONE) {
             if (selectedGame[0] != null && gameMap.get(selectedGame[0]) != null) {
-                restClient.joinGame(gameMap.get(selectedGame[0]));
+                String exceptionMessage = restClient.joinGame(gameMap.get(selectedGame[0]));
+                showExceptionDialog(exceptionMessage);
                 updateState();
             }
         }
@@ -269,7 +291,8 @@ public class CardGameClientController {
 
     @FXML
     protected void onStopGame() {
-        restClient.stopGame();
+        String exceptionMessage = restClient.stopGame();
+        showExceptionDialog(exceptionMessage);
         gameEngine.initGame();
         updateState();
     }

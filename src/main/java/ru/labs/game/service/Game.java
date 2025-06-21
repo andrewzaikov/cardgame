@@ -11,7 +11,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Singleton (static).
+ * pring bean.
  * Most of game-engine functions: cards, status etc.
  */
 @Service
