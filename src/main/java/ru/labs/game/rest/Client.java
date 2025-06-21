@@ -4,9 +4,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.UUID;
+import java.util.*;
 
 /**
  * Singleton (static). Connection to server, join a game, obtain a status etc.
@@ -60,13 +58,16 @@ public class Client {
     }
 
     public List<GameListItemDto> getGameList() {
-        List<GameListItemDto> gameList = Collections.emptyList();
+        List<GameListItemDto> gameList = new LinkedList<>();
         synchronized (Client.class) {
             if(!requestPending) {
                 requestPending = true;
-                gameList = restTemplate.getForObject(serverAddress+"/gameList?session="+token, List.class);
+                List<Map<String, String>> reply = restTemplate.getForObject(serverAddress+"/gameList?session="+token, List.class);
                 System.out.println("gameList:");
-                System.out.println(gameList);
+                System.out.println(reply);
+                for (Map<String, String> item: reply) {
+                    gameList.add(new GameListItemDto(item.get("gameCaption"), item.get("gameId")));
+                }
                 requestPending = false;
             }
         }
@@ -79,6 +80,7 @@ public class Client {
                 requestPending = true;
                 this.gameId = gameId;
                 restTemplate.postForObject(serverAddress+"/join?session="+token+"&id="+gameId, null, Object.class);
+                System.out.println("joinGame: post");
                 requestPending = false;
             }
         }
@@ -99,19 +101,48 @@ public class Client {
     }
 
     public void takeCard() {
-
+        synchronized (Client.class) {
+            if (!requestPending) {
+                requestPending = true;
+                restTemplate.postForObject(serverAddress+"/takeCard?session="+token, null, Object.class);
+                System.out.println("takeCard: post");
+                requestPending = false;
+            }
+        }
     }
 
     public void passMove() {
-
+        synchronized (Client.class) {
+            if (!requestPending) {
+                requestPending = true;
+                restTemplate.postForObject(serverAddress+"/passMove?session="+token, null, Object.class);
+                System.out.println("passMove: post");
+                requestPending = false;
+            }
+        }
     }
 
     public void stopGame() {
-
+        synchronized (Client.class) {
+            if (!requestPending) {
+                requestPending = true;
+                restTemplate.postForObject(serverAddress+"/stopGame?session="+token, null, Object.class);
+                System.out.println("stopGame: post");
+                requestPending = false;
+            }
+        }
     }
 
     public void startGame() {
-
+        synchronized (Client.class) {
+            if (!requestPending) {
+                requestPending = true;
+                String reply = restTemplate.postForObject(serverAddress+"/startGame?session="+token, null, String.class);
+                System.out.println("startGame: post="+reply);
+                gameId = reply;
+                requestPending = false;
+            }
+        }
     }
 
     public void connect(String serverAddress, String firstName, String lastName) {

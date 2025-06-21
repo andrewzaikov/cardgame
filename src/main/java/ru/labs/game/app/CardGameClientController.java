@@ -13,11 +13,6 @@ import javafx.scene.layout.FlowPane;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.springframework.beans.factory.annotation.Autowire;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Configurable;
-import org.springframework.context.annotation.Bean;
-import org.springframework.web.client.RestTemplate;
 import ru.labs.game.model.Card;
 import ru.labs.game.rest.Client;
 import ru.labs.game.rest.GameInfoDto;
@@ -33,10 +28,6 @@ import java.util.Optional;
 
 
 public class CardGameClientController {
-    //private final Random random = new Random(System.currentTimeMillis());
-    //private final CardSuit[] suits = {CardSuit.HEARTS, CardSuit.DIAMOND, CardSuit.CLUBS, CardSuit.SPADES};
-    @FXML
-    private Label buttonHelpText;
     @FXML
     private Label opponentCardsLabel;
     @FXML
@@ -78,17 +69,11 @@ public class CardGameClientController {
         this.gameEngine = gameEngine;
     }
 
-    //private Stage stage;
-    //private Scene scene;
-
     public void setRestClient(Client restClient) {
         this.restClient = restClient;
     }
 
     public void start(Stage stage, Scene scene) {
-        //this.stage = stage;
-        //this.scene = scene;
-
         updateState();
     }
 
@@ -119,10 +104,11 @@ public class CardGameClientController {
                 opponentCardsLabel.setText("Cards of your opponent, score =" + (hideCard ? " ?" : " " + gameEngine.getScore(gameEngine.getOpponentCards())));
                 myCardsLabel.setText("Your cards, score = " + gameEngine.getScore(gameEngine.getMyCards()));
 
-                takeCardButton.setDisable(false);
-                takeCardItem.setDisable(false);
-                passMoveButton.setDisable(false);
-                passMoveItem.setDisable(false);
+                boolean buttonsDisabled = (gameEngine.getStatus() != GameStatus.PLAYER_TURN);
+                takeCardButton.setDisable(buttonsDisabled);
+                takeCardItem.setDisable(buttonsDisabled);
+                passMoveButton.setDisable(buttonsDisabled);
+                passMoveItem.setDisable(buttonsDisabled);
 
                 switch (gameEngine.getStatus()) {
                     case CONNECTED -> messagesLabel.setText("Now join an existing game.");
@@ -161,25 +147,18 @@ public class CardGameClientController {
 
     @FXML
     protected void onTakeCardClick() {
-/*        CardSuit suit = suits[random.nextInt(4)];
-        int value = random.nextInt(10) + 2;
-        if (value == 5) {
-            value++;
-        }
-        Engine.getMyCards().add(new Card(value, suit));*/
         restClient.takeCard();
         updateState();
     }
 
     @FXML
     protected void onPassMoveClick() {
-/*        CardSuit suit = suits[random.nextInt(4)];
-        int value = random.nextInt(10) + 2;
-        if (value == 5) {
-            value++;
-        }
-        Engine.getOpponentCards().add(new Card(value, suit));*/
         restClient.passMove();
+        updateState();
+    }
+
+    @FXML
+    protected void onRefreshClick() {
         updateState();
     }
 
@@ -216,7 +195,7 @@ public class CardGameClientController {
 
         Dialog<ButtonType> dialog = new Dialog<>();
         dialog.getDialogPane().setContent(vbox);
-        dialog.getDialogPane().getButtonTypes().addAll(connectButtonType, cancelButtonType);
+        dialog.getDialogPane().getButtonTypes().addAll(cancelButtonType, connectButtonType);
 
         Button lookupButton = (Button) dialog.getDialogPane().lookupButton(connectButtonType);
         lookupButton.addEventFilter(ActionEvent.ACTION, event -> {
@@ -251,8 +230,8 @@ public class CardGameClientController {
     protected void onJoinGame() {
         List<GameListItemDto> gameList = restClient.getGameList();
         Map<String, String> gameMap = new HashMap<>(gameList.size());
-        for (var item : gameList) {
-            gameMap.put(item.gameCaption(), item.gameId());
+        for (GameListItemDto gameListItemDto : gameList) {
+            gameMap.put(gameListItemDto.gameCaption(), gameListItemDto.gameId());
         }
 
         ButtonType okButtonType = new ButtonType("Connect", ButtonBar.ButtonData.OK_DONE);
